@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Time tracker</title>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+	<script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+	<script src="jquery.storageapi.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>	
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script>
+	function notifyMe() {
+		if (!("Notification" in window)) {
+			alert("This browser does not support desktop notification");
+		}
+		var options = {
+			body: "What are you doing?\nClick here to enter your input."
+		};
+		var notification = new Notification("Time tracker", options);
+		setTimeout(notification.close.bind(notification), 5000);
+		notification.onclick = function () {
+			window.focus();
+			focusInput();
+		};
+	}
+
+	function addEntry(e) {
+		e.preventDefault();  
+        var data = $("#add");
+        if ("" != data.val().trim()) {
+	        var date = new Date();
+	        prependDOMElement(date, data.val());
+	        var map = $.localStorage.get("entries") || {};
+	        map[date.getTime()] = data.val();
+	        $.localStorage.set("entries", map);
+    	   	data.val("");
+    	} else {
+    		$(".alert-warning").slideDown();
+    		$(".alert-warning").delay(1000).slideUp();
+    	}
+	}
+
+	function hideAlertSection() {
+		$(".alert-warning").hide();
+	}
+
+	function focusInput() {
+		document.getElementById("add").focus();
+	}
+
+
+	function prependDOMElement(date, value) {
+		$(".list-group").prepend("<li class='list-group-item' data-timestamp='" + date.getTime() + "'>" 
+			+ "<span class='badge'>" + date.toDateString() + "</span>" 
+			+ "<span class='badge diff'></span>" 
+			+ "<span class='badge'>" + date.getHours() + ":" + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes() + "h</span>" + value + "</li>");
+
+		setDiffInMinutes($('*[data-timestamp="' + date.getTime() + '"]'), date);
+	}
+
+	function setDiffInMinutes(current, date) {
+		var nextTimeStamp = current.next().data("timestamp");
+		if (nextTimeStamp != undefined) {
+			var nextIsDifferentDay = date.toDateString() != new Date(nextTimeStamp).toDateString();
+			if (!nextIsDifferentDay) {
+				var diff = Math.floor((date.getTime() - parseInt(nextTimeStamp)) / 60000);
+				current.find(".diff").text("+" + diff + " min");
+			}
+		}
+	}
+
+	function fillTable() {
+		var map = $.localStorage.get("entries") || {};
+		var keys = Object.keys(map);
+		keys.sort();
+		for(count = 0; count < keys.length; count++) {
+			prependDOMElement(new Date(parseInt(keys[count])), map[keys[count]]);
+		}
+	}
+
+	function confirmClear() {
+		$(".clearButton").hide();
+		$(".clearConfirmationYes").show();
+		$(".clearConfirmationCancel").show();
+	}
+
+	function cancelClear() {
+		$(".clearButton").show();
+		$(".clearConfirmationYes").hide();
+		$(".clearConfirmationCancel").hide();		
+	}
+
+	function performClear() {
+		$(".list-group").slideUp(1000);
+    	$(".list-group").delay(1000).empty();
+	   	$(".list-group").slideDown();
+	   	$.localStorage.remove("entries");
+		cancelClear();
+	}
+
+	$(function() { //shorthand document.ready function
+		$('[data-toggle="tooltip"]').tooltip();
+
+	    $('#timetrackerform').on('submit', function(e) { 
+	        addEntry(e);
+	    });
+
+	    $("#clearConfirm").click(function(e) {
+	    	confirmClear();
+	    });
+
+	    $("#clearCancel").click(function(e) {
+			cancelClear();	    	
+	    });
+
+	    $("#clearYes").click(function(e) {
+	    	performClear();
+	    });
+
+	    $(".timer").click(function(e) {
+	    	var selection = e.target.textContent; // 30m, 1h, 2h
+	    	alert("Not yet implemented. Selection: " + selection);
+	    })
+
+		hideAlertSection();
+	    cancelClear();
+	    fillTable();
+	    focusInput();
+	});
+
+	/*setInterval(function() {
+	    notifyMe();
+	}, 10 * 1000);	*/
+	</script>
+</head>
+<body style="margin:20px">
+<form id="timetrackerform">
+	<div class="panel panel-primary">
+	  <!-- Default panel contents -->
+	  <div class="panel-heading">Time tracker
+		  <div class="btn-group btn-group-xs navbar-right" style="margin-right:0.2em" role="group">
+		  	<button type="button" title="Turn off" class="btn timer btn-default">Off</button>
+			<button type="button" title="Every 30min" class="btn timer btn-default active">30m</button>
+			<button type="button" title="Every hour" class="btn timer btn-default">1h</button>
+		  	<span class="glyphicon glyphicon-refresh" aria-hidden="true" style="margin-left:0.4em"></span>
+		  </div>
+	  </div>
+	  <div class="panel-body">
+	   	<div class="input-group">
+	      <input type="text" class="form-control" id="add" placeholder="What are you doing?">
+	      <span class="input-group-btn">
+	        <button class="btn btn-success" type="submit">Add</button>
+	      </span>
+	    </div>
+	    <div class="alert alert-warning" role="alert">Please enter a description of your tasks.</div>
+	  </div>
+	  <ul class="list-group">
+	  </ul>
+
+	</div>
+	<div class="btn-group btn-group-justified" role="group">
+	  	<div class="btn-group clearButton" role="group">
+	 		<button type="button" id="clearConfirm" class="btn btn-danger">Clear</button>
+		</div>
+		<div class="btn-group clearConfirmationYes" role="group">
+	 		<button type="button" id="clearYes" class="btn btn-success">Yes, clear!</button>
+		</div>
+		<div class="btn-group clearConfirmationCancel" role="group">
+	 		<button type="button" id="clearCancel" class="btn btn-danger">Cancel</button>
+		</div>
+	</div>
+
+</form>
+</body>
+</html>
