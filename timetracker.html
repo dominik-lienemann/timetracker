@@ -11,6 +11,9 @@
 
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<script>
+	
+	var interval;
+
 	function notifyMe() {
 		if (!("Notification" in window)) {
 			alert("This browser does not support desktop notification");
@@ -37,9 +40,13 @@
 	        $.localStorage.set("entries", map);
     	   	data.val("");
     	} else {
-    		$(".alert-warning").slideDown();
-    		$(".alert-warning").delay(1000).slideUp();
+    		showAlertSection();
     	}
+	}
+
+	function showAlertSection() {
+		$(".alert-warning").slideDown();
+		$(".alert-warning").delay(1000).slideUp();		
 	}
 
 	function hideAlertSection() {
@@ -49,7 +56,6 @@
 	function focusInput() {
 		document.getElementById("add").focus();
 	}
-
 
 	function prependDOMElement(date, value) {
 		$(".list-group").prepend("<li class='list-group-item' data-timestamp='" + date.getTime() + "'>" 
@@ -100,6 +106,45 @@
 		cancelClear();
 	}
 
+	function setReminderButtonSelection(id) {
+		if (id == undefined) { // init load
+			id = "remind-" + $.localStorage.get("interval");
+			$("." + id + "-label").button("toggle");
+			console.log(id);
+		}
+		if (id != undefined && id == "remind-60") {
+			var intervalSelection = 60;
+		} else if (id != undefined && id == "remind-1") {
+			var intervalSelection = 1;
+		} else if (id != undefined &&  id == "remind-0") {
+			var intervalSelection = 0;
+		} else {
+			var intervalSelection = 30;
+		}
+		$.localStorage.set("interval", intervalSelection);
+		console.log("Init loop with delay " + intervalSelection);
+
+		// set button state (active/inactive)
+
+		initInterval();
+	}
+
+	function initInterval() {
+		if (interval != undefined) {
+			clearInterval(interval);
+			console.log("cleared interval, setting new one");
+		} 
+		interval = setInterval(function(){
+			intervalSelection = $.localStorage.get("interval");
+			if ((new Date().getMinutes() === 0 && intervalSelection != 0)
+				|| (new Date().getMinutes() === 30 && intervalSelection == 30)
+				|| (intervalSelection == 1)) {
+				notifyMe();
+			}
+		}, 60 * 1000);
+
+	}
+
 	$(function() { //shorthand document.ready function
 		$('[data-toggle="tooltip"]').tooltip();
 
@@ -119,20 +164,18 @@
 	    	performClear();
 	    });
 
-	    $(".timer").click(function(e) {
-	    	var selection = e.target.textContent; // 30m, 1h, 2h
-	    	alert("Not yet implemented. Selection: " + selection);
-	    })
+		$('.reminder-button').change(function (e) {
+			setReminderButtonSelection(e.target.id);
+		});
 
 		hideAlertSection();
 	    cancelClear();
 	    fillTable();
 	    focusInput();
+	    setReminderButtonSelection();
+	    initInterval();
 	});
 
-	/*setInterval(function() {
-	    notifyMe();
-	}, 10 * 1000);	*/
 	</script>
 </head>
 <body style="margin:20px">
@@ -140,10 +183,19 @@
 	<div class="panel panel-primary">
 	  <!-- Default panel contents -->
 	  <div class="panel-heading">Time tracker
-		  <div class="btn-group btn-group-xs navbar-right" style="margin-right:0.2em" role="group">
-		  	<button type="button" title="Turn off" class="btn timer btn-default">Off</button>
-			<button type="button" title="Every 30min" class="btn timer btn-default active">30m</button>
-			<button type="button" title="Every hour" class="btn timer btn-default">1h</button>
+		  <div data-toggle="buttons" class="btn-group btn-group-xs navbar-right" data-toggle="button" style="margin-right:0.2em" role="group">
+			<label class="btn btn-default remind-0-label">
+				<input class="reminder-button" type="radio" name="timer" id="remind-0"/>Off
+			</label>
+			<label class="btn btn-default remind-1-label">
+				<input class="reminder-button" type="radio" name="timer" id="remind-1"/>1m
+			</label>
+			<label class="btn btn-default remind-30-label">
+				<input class="reminder-button" type="radio" name="timer" id="remind-30"/>30m
+			</label>
+			<label class="btn btn-default remind-60-label">
+				<input class="reminder-button" type="radio" name="timer" id="remind-60"/>1h
+			</label>
 		  	<span class="glyphicon glyphicon-refresh" aria-hidden="true" style="margin-left:0.4em"></span>
 		  </div>
 	  </div>
