@@ -14,10 +14,16 @@
 	
 	var interval;
 
+	function checkNotificationPermission() {
+		  if (!("Notification" in window)) {
+		    alert("This browser does not support desktop notification");
+		  } else if (Notification.permission !== 'denied') {
+		    Notification.requestPermission(function (permission) {
+		    });
+		  }
+	}
+
 	function notifyMe() {
-		if (!("Notification" in window)) {
-			alert("This browser does not support desktop notification");
-		}
 		var options = {
 			body: "What are you doing?\nClick here to enter your input."
 		};
@@ -168,6 +174,7 @@
 			setReminderButtonSelection(e.target.id);
 		});
 
+		checkNotificationPermission();
 		hideAlertSection();
 	    cancelClear();
 	    fillTable();
