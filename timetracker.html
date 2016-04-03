@@ -19,8 +19,11 @@
 		    alert("This browser does not support desktop notification");
 		  } else if (Notification.permission !== 'denied') {
 		    Notification.requestPermission(function (permission) {
+		    	if (permission == "granted") {
+		  			$("#notification-alert").hide();
+		    	}
 		    });
-		  }
+		  } 
 	}
 
 	function notifyMe() {
@@ -114,7 +117,11 @@
 
 	function setReminderButtonSelection(id) {
 		if (id == undefined) { // init load
-			id = "remind-" + $.localStorage.get("interval");
+			var storedInterval = $.localStorage.get("interval");
+			if (storedInterval == null) {
+				storedInterval = 30; // default 30
+			}
+			id = "remind-" + storedInterval;
 			$("." + id + "-label").button("toggle");
 			console.log(id);
 		}
@@ -125,12 +132,10 @@
 		} else if (id != undefined &&  id == "remind-0") {
 			var intervalSelection = 0;
 		} else {
-			var intervalSelection = 30;
+			var intervalSelection = 30; // default 30
 		}
 		$.localStorage.set("interval", intervalSelection);
 		console.log("Init loop with delay " + intervalSelection);
-
-		// set button state (active/inactive)
 
 		initInterval();
 	}
@@ -187,6 +192,10 @@
 </head>
 <body style="margin:20px; padding-bottom: 50px;">
 <form id="timetrackerform">
+	<div class="alert alert-danger alert-dismissible" id="notification-alert" role="alert">
+	  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	  <strong>Caution:</strong> Notifications are not enabled.
+	</div>
 	<div class="panel panel-primary">
 	  <!-- Default panel contents -->
 	  <div class="panel-heading">Time tracker
@@ -217,9 +226,8 @@
 	  </div>
 	  <ul class="list-group">
 	  </ul>
-
 	</div>
-	<div class="btn-group btn-group-justified" role="group">
+	<div class="btn-group btn-group-justified" id="bottom" role="group">
 	  	<div class="btn-group clearButton" role="group">
 	 		<button type="button" id="clearConfirm" class="btn btn-danger">Clear</button>
 		</div>
@@ -235,6 +243,7 @@
 			<ul class="nav nav-pills">
 				<li role="presentation"><a target="_blank" href="http://www.lienemann.net">About</a></li>
 				<li role="presentation"><a target="_blank" href="https://github.com/dominik-lienemann/timetracker/">Github</a></li>
+				<li role="presentation"><a href="#bottom">Scroll to the bottom</a></li>
 				<li class="navbar-right" role="presentation"><a target="_blank" href="https://www.paypal.me/lienemann">
 					<img alt="donate" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif">
 				</a></li>
